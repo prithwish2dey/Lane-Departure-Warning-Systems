@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lane Departure Warning System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+  body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
+    text-align: center;
+    min-height: 100vh;
+  }
+
+    header {
+    background: linear-gradient(270deg, #6a11cb, #2575fc, #ff758c);
+    background-size: 600% 600%;
+    animation: gradientAnimation 15s ease infinite;
+    color: white;
+    padding: 25px;
+    font-size: 2.5rem;
+    font-weight: 700;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    border-radius: 0 0 20px 20px;
+    text-shadow: 1px 1px 5px rgba(0,0,0,0.3);
+    }
+
+    @keyframes gradientAnimation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+    }
+
+
+  .container {
+    margin: 40px auto;
+    max-width: 650px;
+    background: white;
+    padding: 35px;
+    border-radius: 15px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    transition: transform 0.3s;
+  }
+
+  .container:hover {
+    transform: translateY(-5px);
+  }
+
+  input[type=file] {
+    display: block;
+    margin: 25px auto;
+    font-size: 1rem;
+  }
+
+  button {
+    background: linear-gradient(45deg, #36d1dc, #5b86e5);
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  button:hover {
+    transform: scale(1.05);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  }
+
+  button:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+  }
+
+  #spinner {
+    display: none;
+    margin: 25px auto;
+  }
+
+  #progress-container {
+    display: none;
+    width: 80%;
+    margin: 20px auto;
+    background: #eee;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 20px;
+  }
+
+  #progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff416c, #ff4b2b);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+  }
+
+  #output-video {
+    margin-top: 25px;
+    width: 100%;
+    border-radius: 10px;
+    display: none;
+    animation: fadeIn 1s ease forwards;
+  }
+
+  @keyframes fadeIn {
+    0% { opacity: 0; transform: scale(0.95); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  #download-btn {
+    display: none;
+    margin-top: 20px;
+  }
+
+</style>
+</head>
+<body>
+
+<header>Lane Departure Warning System</header>
+
+<div class="container">
+  <input type="file" id="video-upload" accept="video/*">
+  <button id="process-btn" disabled>Process Video</button>
+
+  <div id="spinner">
+    <p>Processing... Please wait.</p>
+    <img src="https://i.gifer.com/ZZ5H.gif" width="50">
+  </div>
+
+  <div id="progress-container">
+    <div id="progress-bar"></div>
+  </div>
+
+  <video id="output-video" controls></video>
+
+  <a id="download-btn" href="#" download="processed_video.mp4">
+    <button>Download Processed Video</button>
+  </a>
+</div>
+
+<script>
+const uploadInput = document.getElementById('video-upload');
+const processBtn = document.getElementById('process-btn');
+const spinner = document.getElementById('spinner');
+const outputVideo = document.getElementById('output-video');
+const downloadBtn = document.getElementById('download-btn');
+const progressContainer = document.getElementById('progress-container');
+const progressBar = document.getElementById('progress-bar');
+
+let videoFile;
+
+uploadInput.addEventListener('change', (e) => {
+  videoFile = e.target.files[0];
+  processBtn.disabled = !videoFile;
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!videoFile) return;
+
+  spinner.style.display = 'block';
+  outputVideo.style.display = 'none';
+  downloadBtn.style.display = 'none';
+  progressContainer.style.display = 'block';
+  progressBar.style.width = '0%';
+
+  const formData = new FormData();
+  formData.append('video', videoFile);
+
+  // Simulate progress bar
+  let progress = 0;
+  const progressInterval = setInterval(() => {
+    progress = Math.min(progress + Math.random() * 10, 95);
+    progressBar.style.width = progress + '%';
+  }, 500);
+
+  try {
+    const response = await fetch('/process_video', { method:'POST', body: formData });
+    if(!response.ok) throw new Error('Processing failed.');
+
+    const data = await response.json();
+    const url = data.video_url;
+
+    clearInterval(progressInterval);
+    progressBar.style.width = '100%';
+
+    outputVideo.src = url;
+    outputVideo.load();
+    outputVideo.style.display = 'block';
+    outputVideo.play();
+
+    downloadBtn.href = url;
+    downloadBtn.style.display = 'inline-block';
+  } catch(err) {
+    alert(err.message);
+  } finally {
+    spinner.style.display = 'none';
+    setTimeout(() => progressContainer.style.display = 'none', 500);
+  }
+});
+</script>
+
+</body>
+</html>
